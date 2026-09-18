@@ -12,6 +12,7 @@ public class NettingRun {
     private NettingRunStatus status;
     private final Instant createdAt;
     private String failureReason;
+    private boolean acknowledged;
 
     public NettingRun(
             String runId,
@@ -20,12 +21,28 @@ public class NettingRun {
             NettingRunStatus status,
             Instant createdAt,
             String failureReason) {
+        this(runId, settleDate, currency, status, createdAt, failureReason, false);
+    }
+
+    public NettingRun(
+            String runId,
+            LocalDate settleDate,
+            String currency,
+            NettingRunStatus status,
+            Instant createdAt,
+            String failureReason,
+            boolean acknowledged) {
         this.runId = Objects.requireNonNull(runId);
         this.settleDate = Objects.requireNonNull(settleDate);
         this.currency = Objects.requireNonNull(currency).toUpperCase();
         this.status = Objects.requireNonNull(status);
         this.createdAt = Objects.requireNonNull(createdAt);
-        this.failureReason = failureReason;
+        this.failureReason = reasonOrNull(failureReason);
+        this.acknowledged = acknowledged;
+    }
+
+    private static String reasonOrNull(String reason) {
+        return reason == null || reason.isBlank() ? null : reason;
     }
 
     public static NettingRun create(LocalDate settleDate, String currency) {
@@ -35,7 +52,8 @@ public class NettingRun {
                 currency,
                 NettingRunStatus.CREATED,
                 Instant.now(),
-                null);
+                null,
+                false);
     }
 
     public void markRunning() {
@@ -50,6 +68,15 @@ public class NettingRun {
     public void markFailed(String reason) {
         this.status = NettingRunStatus.FAILED;
         this.failureReason = reason;
+        this.acknowledged = false;
+    }
+
+    /** 操作员确认已处理该 FAILED 批次，门禁不再拦截。 */
+    public void acknowledgeFailure() {
+        if (this.status != NettingRunStatus.FAILED) {
+            throw new IllegalStateException("only FAILED runs can be acknowledged");
+        }
+        this.acknowledged = true;
     }
 
     public String getRunId() {
@@ -74,5 +101,9 @@ public class NettingRun {
 
     public String getFailureReason() {
         return failureReason;
+    }
+
+    public boolean isAcknowledged() {
+        return acknowledged;
     }
 }

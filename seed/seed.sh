@@ -27,9 +27,9 @@ fi
 AUTH="Authorization: Bearer ${TOKEN}"
 
 MEMBERS=$(curl -sf "${BACKEND_URL}/api/members" -H "$AUTH")
-COUNT=$(printf '%s' "$MEMBERS" | grep -o '"memberId"' | wc -l | tr -d ' ')
-if [ "$COUNT" -gt 0 ]; then
-  echo "Seed skipped: members already exist ($COUNT)"
+# 仅以基线会员 Alpha Bank 是否存在作为幂等判据，避免与门禁演示会员互相干扰。
+if printf '%s' "$MEMBERS" | grep -q '"name":"Alpha Bank"'; then
+  echo "Seed skipped: baseline member Alpha Bank already exists"
   exit 0
 fi
 

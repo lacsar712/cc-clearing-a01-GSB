@@ -54,4 +54,12 @@ public class ObligationApplicationService {
             throw new DomainException("SUSPENDED_MEMBER", "cannot create obligation for suspended member: " + memberId);
         }
     }
+
+    @Transactional
+    public TradeObligation cancel(String obligationId) {
+        TradeObligation obligation = obligationRepository.findById(obligationId)
+                .orElseThrow(() -> new DomainException("OBLIGATION_NOT_FOUND", "obligation not found: " + obligationId));
+        obligation.cancel();
+        return obligationRepository.save(obligation);
+    }
 }

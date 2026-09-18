@@ -1,19 +1,25 @@
 package com.clearing.netting.adapter.out.persistence.entity;
 
-import com.clearing.netting.domain.model.NettingRunStatus;
+import com.clearing.netting.domain.model.GateRunStatus;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "netting_runs")
-public class NettingRunJpaEntity {
+@Table(name = "gate_runs")
+public class GateRunJpaEntity {
 
     @Id
     @Column(length = 64)
@@ -22,21 +28,19 @@ public class NettingRunJpaEntity {
     @Column(nullable = false)
     private LocalDate settleDate;
 
-    @Column(nullable = false, length = 8)
-    private String currency;
+    @Column(length = 64)
+    private String operator;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private NettingRunStatus status;
+    @Column(nullable = false, length = 16)
+    private GateRunStatus status;
 
     @Column(nullable = false)
     private Instant createdAt;
 
-    @Column(length = 512)
-    private String failureReason;
-
-    @Column(nullable = false)
-    private boolean acknowledged = false;
+    @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("position ASC")
+    private List<GateCheckResultJpaEntity> results = new ArrayList<>();
 
     public String getRunId() {
         return runId;
@@ -54,19 +58,19 @@ public class NettingRunJpaEntity {
         this.settleDate = settleDate;
     }
 
-    public String getCurrency() {
-        return currency;
+    public String getOperator() {
+        return operator;
     }
 
-    public void setCurrency(String currency) {
-        this.currency = currency;
+    public void setOperator(String operator) {
+        this.operator = operator;
     }
 
-    public NettingRunStatus getStatus() {
+    public GateRunStatus getStatus() {
         return status;
     }
 
-    public void setStatus(NettingRunStatus status) {
+    public void setStatus(GateRunStatus status) {
         this.status = status;
     }
 
@@ -78,19 +82,11 @@ public class NettingRunJpaEntity {
         this.createdAt = createdAt;
     }
 
-    public String getFailureReason() {
-        return failureReason;
+    public List<GateCheckResultJpaEntity> getResults() {
+        return results;
     }
 
-    public void setFailureReason(String failureReason) {
-        this.failureReason = failureReason;
-    }
-
-    public boolean isAcknowledged() {
-        return acknowledged;
-    }
-
-    public void setAcknowledged(boolean acknowledged) {
-        this.acknowledged = acknowledged;
+    public void setResults(List<GateCheckResultJpaEntity> results) {
+        this.results = results;
     }
 }

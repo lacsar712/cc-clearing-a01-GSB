@@ -14,5 +14,7 @@ public interface ObligationJpaRepository
     List<ObligationJpaEntity> findBySettleDateAndCurrencyIgnoreCaseAndStatus(
             LocalDate settleDate, String currency, ObligationStatus status);
 
+    List<ObligationJpaEntity> findBySettleDateAndStatus(LocalDate settleDate, ObligationStatus status);
+
     List<ObligationJpaEntity> findByNettingRunId(String nettingRunId);
 }

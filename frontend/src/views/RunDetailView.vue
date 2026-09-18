@@ -12,6 +12,12 @@
         :loading="settling"
         @click="settle"
       >确认 Settle</el-button>
+      <el-button
+        type="warning"
+        :disabled="!auth.isOperator || detail?.run?.status !== 'FAILED' || detail?.run?.acknowledged"
+        :loading="acknowledging"
+        @click="acknowledge"
+      >确认已处理 FAILED</el-button>
     </div>
 
     <div class="card-panel" v-loading="loading">
@@ -29,6 +35,11 @@
           <el-descriptions-item label="ΣnetAmount">{{ detail.sumNetAmount }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.run.failureReason" label="失败原因" :span="2">
             {{ detail.run.failureReason }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.run.status === 'FAILED'" label="处理状态">
+            <el-tag :type="detail.run.acknowledged ? 'success' : 'danger'">
+              {{ detail.run.acknowledged ? '已确认处理' : '未处理（门禁拦截）' }}
+            </el-tag>
           </el-descriptions-item>
         </el-descriptions>
 
@@ -67,6 +78,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const loading = ref(false)
 const settling = ref(false)
+const acknowledging = ref(false)
 const detail = ref(null)
 
 const alreadySettled = computed(() =>
@@ -96,6 +108,17 @@ async function settle() {
     await load()
   } finally {
     settling.value = false
+  }
+}
+
+async function acknowledge() {
+  acknowledging.value = true
+  try {
+    await api.post(`/netting-runs/${route.params.id}/acknowledge`)
+    ElMessage.success('已确认处理该 FAILED 批次')
+    await load()
+  } finally {
+    acknowledging.value = false
   }
 }
 

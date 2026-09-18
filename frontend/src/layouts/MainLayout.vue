@@ -2,10 +2,15 @@
   <el-container class="layout">
     <el-aside width="220px" class="aside">
       <div class="brand">轧差清算工作台</div>
-      <el-menu :default-active="route.path" router>
+      <el-menu :default-active="route.path" router :default-openeds="['gate']">
         <el-menu-item index="/">首页</el-menu-item>
         <el-menu-item index="/members">会员</el-menu-item>
         <el-menu-item index="/obligations">义务</el-menu-item>
+        <el-sub-menu index="gate">
+          <template #title>日终门禁</template>
+          <el-menu-item index="/gate">门禁执行</el-menu-item>
+          <el-menu-item index="/gate/history">门禁历史</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/netting">轧差执行</el-menu-item>
       </el-menu>
     </el-aside>

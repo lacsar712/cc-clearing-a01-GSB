@@ -1,12 +1,14 @@
 package com.clearing.netting.application;
 
 import com.clearing.netting.domain.exception.DomainException;
+import com.clearing.netting.domain.model.GateRun;
 import com.clearing.netting.domain.model.Member;
 import com.clearing.netting.domain.model.NetPosition;
 import com.clearing.netting.domain.model.NettingRun;
 import com.clearing.netting.domain.model.NettingRunStatus;
 import com.clearing.netting.domain.model.ObligationStatus;
 import com.clearing.netting.domain.model.TradeObligation;
+import com.clearing.netting.domain.port.out.GateRunRepositoryPort;
 import com.clearing.netting.domain.port.out.MemberRepositoryPort;
 import com.clearing.netting.domain.port.out.NetPositionRepositoryPort;
 import com.clearing.netting.domain.port.out.NettingRunRepositoryPort;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -30,6 +33,7 @@ public class NettingApplicationService {
     private final MemberRepositoryPort memberRepository;
     private final NetPositionRepositoryPort positionRepository;
     private final NettingRunStatusService statusService;
+    private final GateRunRepositoryPort gateRunRepository;
     private final MultilateralNettingService nettingService;
 
     public NettingApplicationService(
@@ -37,12 +41,14 @@ public class NettingApplicationService {
             ObligationRepositoryPort obligationRepository,
             MemberRepositoryPort memberRepository,
             NetPositionRepositoryPort positionRepository,
-            NettingRunStatusService statusService) {
+            NettingRunStatusService statusService,
+            GateRunRepositoryPort gateRunRepository) {
         this.runRepository = runRepository;
         this.obligationRepository = obligationRepository;
         this.memberRepository = memberRepository;
         this.positionRepository = positionRepository;
         this.statusService = statusService;
+        this.gateRunRepository = gateRunRepository;
         this.nettingService = new MultilateralNettingService();
     }
 
@@ -78,6 +84,8 @@ public class NettingApplicationService {
             throw new DomainException("INVALID_CURRENCY", "currency is required");
         }
         String ccy = currency.trim().toUpperCase();
+
+        requireGatePassed(settleDate);
 
         NettingRun run = NettingRun.create(settleDate, ccy);
         run.markRunning();
@@ -115,6 +123,25 @@ public class NettingApplicationService {
             statusService.saveInNewTx(run);
             throw new DomainException("NETTING_FAILED", ex.getMessage());
         }
+    }
+
+    private void requireGatePassed(LocalDate settleDate) {
+        Optional<GateRun> latest = gateRunRepository.findLatestBySettleDate(settleDate);
+        if (latest.isEmpty() || !latest.get().passed()) {
+            throw new DomainException(
+                    "GATE_NOT_PASSED",
+                    "日终门禁尚未通过，请先在「日终门禁」页对交割日 " + settleDate + " 跑完检查并修复全部失败项");
+        }
+    }
+
+    @Transactional
+    public NettingRun acknowledgeFailure(String runId) {
+        NettingRun run = getRun(runId);
+        if (run.getStatus() != NettingRunStatus.FAILED) {
+            throw new DomainException("INVALID_STATE", "only FAILED runs can be acknowledged");
+        }
+        run.acknowledgeFailure();
+        return runRepository.save(run);
     }
 
     @Transactional

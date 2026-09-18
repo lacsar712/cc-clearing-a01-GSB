@@ -11,9 +11,37 @@
           <el-option label="CNY" value="CNY" />
           <el-option label="EUR" value="EUR" />
         </el-select>
-        <el-button type="primary" :disabled="!auth.isOperator" :loading="running" @click="execute">执行轧差</el-button>
+        <el-button
+          type="primary"
+          :disabled="!auth.isOperator || !gate.passed"
+          :loading="running"
+          @click="execute"
+        >执行轧差</el-button>
         <el-button @click="loadRuns">刷新批次</el-button>
       </div>
+
+      <el-alert
+        :closable="false"
+        show-icon
+        :type="gate.passed ? 'success' : gate.hasRun ? 'error' : 'warning'"
+        class="gate-alert"
+      >
+        <template #title>
+          <template v-if="gate.passed">
+            门禁已通过（交割日 {{ settleDate }}），可以执行轧差。
+            <router-link to="/gate" class="gate-link">查看门禁</router-link>
+          </template>
+          <template v-else-if="gate.hasRun">
+            日终门禁未通过，轧差已被拦截。请先到
+            <router-link to="/gate" class="gate-link">日终门禁</router-link>
+            修复全部失败项后重跑。
+          </template>
+          <template v-else>
+            交割日 {{ settleDate }} 尚未运行日终门禁，正式轧差前必须先通过检查。
+            <router-link to="/gate" class="gate-link">前往门禁 →</router-link>
+          </template>
+        </template>
+      </el-alert>
     </div>
 
     <div v-if="result" class="card-panel" style="margin-top:16px">
@@ -57,7 +85,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/client'
 import { useAuthStore } from '../stores/auth'
@@ -70,9 +98,30 @@ const loading = ref(false)
 const result = ref(null)
 const runs = ref([])
 const memberMap = ref({})
+const gate = reactive({ passed: false, hasRun: false, runId: null, status: 'NOT_RUN' })
 
 function nameOf(id) {
   return memberMap.value[id] || ''
+}
+
+async function loadGate() {
+  if (!settleDate.value) {
+    gate.passed = false
+    gate.hasRun = false
+    gate.runId = null
+    gate.status = 'NOT_RUN'
+    return
+  }
+  try {
+    const { data } = await api.get('/gate/status', { params: { settleDate: settleDate.value } })
+    gate.passed = data.passed
+    gate.hasRun = data.hasRun
+    gate.runId = data.runId
+    gate.status = data.status
+  } catch {
+    gate.passed = false
+    gate.hasRun = false
+  }
 }
 
 async function loadRuns() {
@@ -96,13 +145,30 @@ async function execute() {
     result.value = data
     ElMessage.success('轧差完成，守恒校验通过')
     await loadRuns()
+    await loadGate()
   } catch (e) {
     result.value = null
     await loadRuns()
+    await loadGate()
   } finally {
     running.value = false
   }
 }
 
-onMounted(loadRuns)
+watch(settleDate, loadGate)
+
+onMounted(async () => {
+  await Promise.all([loadRuns(), loadGate()])
+})
 </script>
+
+<style scoped>
+.gate-alert {
+  margin-top: 4px;
+}
+.gate-link {
+  color: var(--el-color-primary);
+  font-weight: 600;
+  margin-left: 4px;
+}
+</style>

@@ -72,6 +72,12 @@ public class ObligationRepositoryAdapter implements ObligationRepositoryPort {
     }
 
     @Override
+    public List<TradeObligation> findOpenBySettleDate(LocalDate settleDate) {
+        return repository.findBySettleDateAndStatus(settleDate, ObligationStatus.OPEN)
+                .stream().map(PersistenceMapper::toDomain).collect(Collectors.toList());
+    }
+
+    @Override
     public List<TradeObligation> findByNettingRunId(String runId) {
         return repository.findByNettingRunId(runId).stream()
                 .map(PersistenceMapper::toDomain)

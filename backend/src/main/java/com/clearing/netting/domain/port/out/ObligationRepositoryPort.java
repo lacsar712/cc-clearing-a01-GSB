@@ -20,5 +20,7 @@ public interface ObligationRepositoryPort {
 
     List<TradeObligation> findOpenBySettleDateAndCurrency(LocalDate settleDate, String currency);
 
+    List<TradeObligation> findOpenBySettleDate(LocalDate settleDate);
+
     List<TradeObligation> findByNettingRunId(String runId);
 }

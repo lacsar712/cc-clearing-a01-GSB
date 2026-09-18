@@ -75,6 +75,12 @@ public class NettingRunController {
         return RunResponse.from(nettingService.settle(id));
     }
 
+    @PostMapping("/{id}/acknowledge")
+    public RunResponse acknowledge(@PathVariable("id") String id) {
+        AuthContext.requireOperator();
+        return RunResponse.from(nettingService.acknowledgeFailure(id));
+    }
+
     private BigDecimal sumNet(List<NetPosition> positions) {
         return positions.stream()
                 .map(NetPosition::getNetAmount)
@@ -90,7 +96,8 @@ public class NettingRunController {
             String currency,
             NettingRunStatus status,
             Instant createdAt,
-            String failureReason) {
+            String failureReason,
+            boolean acknowledged) {
         static RunResponse from(NettingRun r) {
             return new RunResponse(
                     r.getRunId(),
@@ -98,7 +105,8 @@ public class NettingRunController {
                     r.getCurrency(),
                     r.getStatus(),
                     r.getCreatedAt(),
-                    r.getFailureReason());
+                    r.getFailureReason(),
+                    r.isAcknowledged());
         }
     }
 

@@ -78,6 +78,14 @@ public class TradeObligation {
         this.status = ObligationStatus.SETTLED;
     }
 
+    /** 取消一笔仍 OPEN 的义务（门禁发现问题数据后的修复手段）。 */
+    public void cancel() {
+        if (status != ObligationStatus.OPEN) {
+            throw new IllegalStateException("only OPEN obligations can be cancelled");
+        }
+        this.status = ObligationStatus.CANCELLED;
+    }
+
     public String getObligationId() {
         return obligationId;
     }
