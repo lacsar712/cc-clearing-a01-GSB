@@ -6,6 +6,11 @@
         <el-menu-item index="/">首页</el-menu-item>
         <el-menu-item index="/members">会员</el-menu-item>
         <el-menu-item index="/obligations">义务</el-menu-item>
+        <el-sub-menu index="eod-gate">
+          <template #title>日终门禁</template>
+          <el-menu-item index="/gate">门禁执行</el-menu-item>
+          <el-menu-item index="/gate-history">运行历史</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/netting">轧差执行</el-menu-item>
       </el-menu>
     </el-aside>
@@ -57,6 +62,12 @@ function onLogout() {
 }
 .aside :deep(.el-menu-item) {
   color: #d9e2ec;
+}
+.aside :deep(.el-sub-menu__title) {
+  color: #d9e2ec;
+}
+.aside :deep(.el-sub-menu__title:hover) {
+  background: #243b53;
 }
 .aside :deep(.el-menu-item.is-active) {
   background: #243b53;

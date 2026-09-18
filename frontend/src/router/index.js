@@ -10,6 +10,8 @@ const routes = [
       { path: '', name: 'home', component: () => import('../views/HomeView.vue') },
       { path: 'members', name: 'members', component: () => import('../views/MembersView.vue') },
       { path: 'obligations', name: 'obligations', component: () => import('../views/ObligationsView.vue') },
+      { path: 'gate', name: 'gate', component: () => import('../views/GateRunView.vue') },
+      { path: 'gate-history', name: 'gate-history', component: () => import('../views/GateHistoryView.vue') },
       { path: 'netting', name: 'netting', component: () => import('../views/NettingView.vue') },
       { path: 'netting-runs/:id', name: 'run-detail', component: () => import('../views/RunDetailView.vue') }
     ]

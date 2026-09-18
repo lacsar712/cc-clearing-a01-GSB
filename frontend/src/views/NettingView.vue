@@ -14,6 +14,35 @@
         <el-button type="primary" :disabled="!auth.isOperator" :loading="running" @click="execute">执行轧差</el-button>
         <el-button @click="loadRuns">刷新批次</el-button>
       </div>
+      <el-alert
+        v-if="gateStatus && gateStatus.status === 'PASSED'"
+        type="success"
+        :closable="false"
+        show-icon
+        :title="`日终门禁已通过（${formatTime(gateStatus.createdAt)}，${gateStatus.createdBy} 发起）`"
+      />
+      <el-alert
+        v-else-if="gateStatus && gateStatus.status === 'FAILED'"
+        type="error"
+        :closable="false"
+        show-icon
+        title="日终门禁未通过，请先到「日终门禁」处理失败项后再轧差"
+      >
+        <template #default>
+          <el-button link type="primary" @click="$router.push('/gate')">前往门禁执行</el-button>
+        </template>
+      </el-alert>
+      <el-alert
+        v-else
+        type="warning"
+        :closable="false"
+        show-icon
+        title="该交割日尚未通过日终门禁检查，建议先执行门禁"
+      >
+        <template #default>
+          <el-button link type="primary" @click="$router.push('/gate')">前往门禁执行</el-button>
+        </template>
+      </el-alert>
     </div>
 
     <div v-if="result" class="card-panel" style="margin-top:16px">
@@ -57,7 +86,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/client'
 import { useAuthStore } from '../stores/auth'
@@ -70,9 +99,30 @@ const loading = ref(false)
 const result = ref(null)
 const runs = ref([])
 const memberMap = ref({})
+const gateStatus = ref(null)
 
 function nameOf(id) {
   return memberMap.value[id] || ''
+}
+
+function formatTime(v) {
+  if (!v) return '-'
+  return new Date(v).toLocaleString()
+}
+
+async function loadGateStatus() {
+  if (!settleDate.value) {
+    gateStatus.value = null
+    return
+  }
+  try {
+    const { data } = await api.get('/eod-gate/status', {
+      params: { businessDate: settleDate.value }
+    })
+    gateStatus.value = data
+  } catch (e) {
+    gateStatus.value = null
+  }
 }
 
 async function loadRuns() {
@@ -104,5 +154,10 @@ async function execute() {
   }
 }
 
-onMounted(loadRuns)
+watch(settleDate, loadGateStatus)
+
+onMounted(() => {
+  loadRuns()
+  loadGateStatus()
+})
 </script>
